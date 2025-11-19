@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Encrypted Statue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&display=swap" rel="stylesheet">
+<!-- html2canvas untuk fitur capture -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<style>
+/* =========================
+   Gaya & Layout 
+   ========================= */
+:root{
+  --bg:#0b0f14;
+  --left-grad: linear-gradient(#2f231f,#c88f4a);
+  --panel-bg:#2f231f;
+  --card:#e9d6cc;
+  --accent:#2f231f;
+  --muted:#f3e7e1;
+}
+
+/* reset dan font */
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:var(--bg);color:#fff;}
+
+/* pusatkan app */
+body{display:flex;align-items:center;justify-content:center;padding:12px;}
+
+/* pembungkus tetap (layout tetap) */
+.app-wrap{ width:900; height:840px; transform-origin:center; }
+
+/* container utama */
+.container{ width:900px; height:840px; display:flex; gap:14px; }
+
+/* kiri: area canvas */
+.left{ flex:1; background:var(--left-grad); border-radius:14px; padding:14px; position:relative; overflow:hidden; display:flex; flex-direction:column; }
+.canvas-wrap{ flex:1; display:flex; align-items:stretch; }
+canvas#game{ width:100%; height:auto; border-radius:10px; background:transparent; touch-action:none; }
+.created { color:; text-align: center; }
+a { text-decoration: none; color:#c88f4a ;}
+
+/* caption bawah canvas */
+.caption{ position:absolute; left:17px; right:18px; bottom:20px; rgba(0,0,0,0.0); border-width:2px; border-color: #2f231f; border-radius:12px; padding:14px; text-align:center; color:#111; }
+.nameTag{ font-family:UnifrakturMaguntia; display:inline-block; padding:8px 8px; border-radius:10px; background:#f0d8c3; border:2px solid var(--accent); color:#111; font-size:26px }
+.quote{ margin-top:12px; font-style:italic; font-size:20px; color:#f0d8c3; }
+
+/* kanan: panel kontrol */
+.right{ width:340px; background:var(--panel-bg); border-radius:14px; padding:16px; color:var(--muted); display:flex; flex-direction:column; }
+.gallery{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:12px; max-height:360px; overflow:auto; }
+.gal-item{ background:var(--card); padding:10px; border-radius:10px; cursor:grab; display:flex; align-items:center; justify-content:center; border:2px solid rgba(0,0,0,0.08); }
+.gal-item.used{ opacity:0.45; cursor:not-allowed; filter:grayscale(.5) }
+.gal-item img{ width:88%; height:auto; pointer-events:none; }
+
+/* input nama */
+label{ margin-top:8px; font-weight:700; font-size:13px; color:var(--muted); }
+input[type=text]{ width:100%; padding:10px; border-radius:8px; border:none; margin-top:6px; background:rgba(255,255,255,0.08); color:#fff }
+
+/* controls */
+.controls{ margin-top:auto; display:flex; gap:10px; }
+.btn{ flex:1; padding:12px; border-radius:10px; border:none; font-weight:700; cursor:pointer; color:#fff }
+.reset{ background:linear-gradient(#ff8e62,#ff5a26); }
+.capture{ background:linear-gradient(#3dd7a2,#0f9969); }
+.analyze{ background:linear-gradient(#6aff81,#0bd43b); color:#111 }
+
+/* ghost visual saat drag */
+.ghost{ position:fixed; width:110px; height:90px; display:none; align-items:center; justify-content:center; pointer-events:none; z-index:9999; border-radius:10px; box-shadow:0 10px 24px rgba(0,0,0,0.45); background:#fff; }
+.ghost img{ width:90%; }
+
+/* scale rules: kecilkan keseluruhan app tanpa mengubah posisi relatif */
+@media (max-width:1099px) and (min-width:820px){ .app-wrap{ transform:scale(0.88);} }
+@media (max-width:819px) and (min-width:600px){ .app-wrap{ transform:scale(0.72);} }
+@media (max-width:599px) and (min-width:420px){ .app-wrap{ transform:scale(0.60);} }
+@media (max-width:419px){ .app-wrap{ transform:scale(0.50);} }
+
+/* scrollbar galeri */
+.gallery::-webkit-scrollbar{ height:6px; width:6px; }
+.gallery::-webkit-scrollbar-thumb{ background:rgba(0,0,0,0.2); border-radius:6px; }
+
+</style>
+</head>
+<body>
+
+<!-- Struktur HTML -->
+<div class="center-wrap">
+<div class="app-wrap">
+  <div class="container">
+    <div class="left" id="leftPanel">
+      <div class="canvas-wrap">
+        <canvas id="game" width="600" height="700" aria-label="Area permainan"></canvas>
+      </div>
+
+      <div class="caption">
+        <div><span class="nameTag" id="nameTag"><'Encrypted'>Statue</span></div>
+        <div class="quote" id="quoteText">"Arrange the rocks to create a masterpiece."</div>
+      </div>
+    </div>
+
+    <div class="right" id="rightPanel">
+      <div style="margin-bottom:10px;">
+        <b>HOW TO CREATE YOUR STATUE</b>
+        <ol style="padding-left:18px;margin-top:6px;">
+          <li>Select and drag a stone from the gallery to the Podium area (or click to spawn).</li>
+<li>Remove the Stone and arrange it → the stone immediately attaches to the previous stone.</li>
+<li>If the stone fails on the podium → the stone falls and you lose.</li>
+<li>The Analyze button is active after at least 1 stone is attached, and can only be used once.</li> 
+<li>Create the work as aesthetically pleasing as possible and name your statue.</li>
+        </ol>
+      </div>
+      <div class="gallery" id="gallery"></div>
+      <label for="nameBox">YOUR STATUE NAME</label>
+      <input id="nameBox" type="text" placeholder="Writting Your Statue name" />
+      <div class="controls">
+        <button class="btn reset" id="resetBtn">Reset</button>
+        <button class="btn capture" id="captureBtn">Capture</button>
+        <button class="btn analyze" id="analyzeBtn" disabled>Encrypted</button>
+      </div>
+      <p class="created">Mini Apss by : <a href="https://soullmon.github.io/portfolio/">@soullmon</a></p>
+    </div>
+  </div>
+</div>
+</div>
+<!-- ghost element -->
+<div class="ghost" id="ghost"><img src="" alt="ghost"></div>
+
+<script src="script.js"></script>
+</body>
+</html>
